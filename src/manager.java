@@ -1,13 +1,17 @@
 import java.net.*; // PACOTE COM RECURSOS DE REDE
 import java.io.*;  // PACOTE COM RECUROS DE ENTRADA E SAIDA
+import java.util.concurrent.Semaphore;
 
 
 public class manager extends Thread{
 
 	private Socket conexaoNode;
-	//Controla qual é o número que está sendo testado como primo.
+	//indica qual o primeiro número para o teste de números primos
 	private static long numeroEmTeste = 10; 
 	private static boolean arquivoOcupado = false;
+	
+	// iniciado em 1 por ser mutex
+	static Semaphore mutexResultado = new Semaphore(1);
 	
 	public manager( Socket conexaoNode ){
 		this.conexaoNode = conexaoNode;
@@ -22,8 +26,8 @@ public class manager extends Thread{
 		 return true;
 	}
 	
-	private boolean escreverArquivo(int codUser, long numero, boolean resultado) {
-		
+	private boolean escreverArquivo(String codUser, long numero, boolean resultado) {
+	/*	
 		System.err.println ( "Tentando escrever no arquivo..." );
 		while (checkArquivo()) {
 			// Melhorar este loop
@@ -31,15 +35,20 @@ public class manager extends Thread{
 		}
 		
 		setLockArquivo(true);
+		*/
 		try {
+			System.err.println ( "tentando obter mutex..." );
+			mutexResultado.acquire();
+			System.err.println ( "capturou mutex, escrevendo no arquivo..." );
+			
+			// Cria um arquivo em formato CSV para permitir abrir no Excel.
 			FileWriter Arquivo = new FileWriter("resultado.csv", true);
 			BufferedWriter escreve = new BufferedWriter(Arquivo);
 			
 			String linhaResultado;
-			linhaResultado = "" + numero + "; " + 
+			linhaResultado = numero + "; " + 
 			                 (resultado ? "primo" : "não primo") + "; " +
 					         codUser + "; ";
-			escreve.newLine();
 	        escreve.write(linhaResultado);
 	        escreve.newLine();
 	        escreve.flush();
@@ -49,14 +58,62 @@ public class manager extends Thread{
 		catch ( Exception e ) { 
 			System.out.println( e ); 
 			return false;
+		} 
+		finally {
+			mutexResultado.release();
+			System.err.println ( "devolvendo mutex..." );
 		}
 		
 		// Remove o Lock
-		setLockArquivo(false);
+		//setLockArquivo(false);
 		
 		System.err.println ( "Finalizando a escrita do arquivo..." );
 		
 		return true;
+	}
+	
+	// Este método é utilizado para o login do usuário quando ele solicita uma nova tarefa e
+	// quando envia os resultados, para garantir que os resultados vem de Nós válidos e confiáveis.
+	private boolean loginUsuario ( String codUser ) {
+		try {
+			FileReader loginArq = new FileReader("login.csv");
+		    BufferedReader lerLoginArq = new BufferedReader(loginArq);
+		    
+		    String strLogin = lerLoginArq.readLine();
+			while (strLogin != null) {
+				System.out.printf("%s\n", strLogin);
+				String arrLogin[] = new String[2];
+				arrLogin = strLogin.split(";");
+				System.out.println(" --> arrLogin[0]:" + arrLogin[0]);
+				System.out.println(" --> arrLogin[1]:" + arrLogin[1]);
+				
+				// Compara o codUser lido no arquivo com o codUser enviado pelo Nó. 
+				if (codUser.compareTo(arrLogin[0]) == 0) {
+					// Se o usuário está ativo o login é aceito.
+					if (arrLogin[1].compareTo("ativo") == 0) {
+						System.err.println ( "Permitindo o login do usuario " + arrLogin[0]);
+						return true;
+					} else {
+						System.err.println ( "Negando o login do usuario " + arrLogin[0]);
+						return false;
+					}
+				}
+				
+				// lê o próxio registro.
+				strLogin = lerLoginArq.readLine();
+			}
+  
+			lerLoginArq.close();
+			loginArq.close();
+		}
+		// Catch para falha no arquivo.
+		catch ( Exception e ) { 
+			System.out.println( e ); 
+			return false;
+		}
+		
+		// Caso tenha lido todo o arquivo e não encontrou o usuário, deve falhar.
+		return false;
 	}
 	
 	public static void main(String[] args) {
@@ -110,9 +167,24 @@ public class manager extends Thread{
 			// Not in use yet.
 			//ObjectOutputStream canalTxObjeto = new ObjectOutputStream ( tx );
 			
+			// Verifica as informações de login.
+			String leuCodUser = canalRxDados.readUTF();
+			if ( loginUsuario(leuCodUser)) {
+				// Indica que servidor aceitou o login do usuário
+				canalTxDados.writeBoolean(true);
+			} else {
+				// Indica que servidor rejeitou o login do usuário
+				canalTxDados.writeBoolean(false);
+				
+				// finalizando a thread aqui
+				System.out.println ( "Fechando o socket devido a falha de login...");
+				this.conexaoNode.close();
+				return;
+			}
+			
+			
 			// Verifica qual o tipo de operação que o node pretende executar.
 			int tipoOperacaoNode = canalRxDados.readInt();
-			
 			System.err.println ( "Tipo de operacao: " + tipoOperacaoNode );
 			
 			// Entra no modo para enviar uma tarefa ao node.
@@ -154,7 +226,7 @@ public class manager extends Thread{
 			}
 			
 			System.out.println ( "Fechando o socket...");
-			//this.conexaoNode.close();
+			this.conexaoNode.close();
 			 
 		 } catch ( Exception e ) { 
 			System.err.println( e ); 

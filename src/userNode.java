@@ -4,11 +4,11 @@ import java.io.*;  // PACOTE COM RECUROS DE ENTRADA E SAIDA
 
 public class userNode {
 
-	private int codNode;
+	private String codNode;
 	private long numeroParaVerificar;
 	private boolean resultadoTeste;
 	
-	public userNode(int codNode) {
+	public userNode(String codNode) {
 		this.codNode = codNode;
 		this.numeroParaVerificar = 0;
 		this.resultadoTeste = false;
@@ -22,7 +22,7 @@ public class userNode {
 		this.resultadoTeste = resultadoTeste;
 	}
 	
-	public int getCodNode(){
+	public String getCodNode(){
 		return codNode;
 	}
 	
@@ -57,7 +57,13 @@ public class userNode {
 			// Obtem um canal para trassmissão de estruturas de dados
 			ObjectOutputStream canalTxObjeto = new ObjectOutputStream ( tx );
 			
-// TODO: Enviar dados de login
+			// Envia dados de login
+			canalTxDados.writeUTF(codNode);
+			if ( !canalRxDados.readBoolean() ) {
+				System.out.println( "O servidor não validou o login, encerrando..." );
+// TODO: podemos inserir outras possibilidades de testes aqui, como código malicioso.
+				return false;
+			}
 			
 			// Indica o tipo de acesso para o servidor.
 			System.out.println ( "Conectando ao servidor, Acesso " + 
@@ -141,25 +147,32 @@ public class userNode {
 		// TODO Auto-generated method stub
 		System.out.println ( "Iniciando o modulo cliente...\n" );
 		
-		//TODO: Ler dados do servidor e do usuário por parâmetro.
-		// TODO: criar um sistema de login.
+		// Verificando a lista de argumentos
+		// Exemplo de execução userNode <codUser> <IP Manager> <Port Manager>
+		if (args.length != 3) {
+			System.out.println ( "Exemplo de execucao: userNode <codUser> <IP Manager> <Port Manager>" );
+			System.out.println ( "Args" + args.length );
+			return;
+		}
 		
 		//Criar um objeto da classe.
-		userNode objTestePrimo = new  userNode(11);
+		userNode objTestePrimo = new userNode(args[0]);
 		
 		// Iniciando uma conexão para solicitar uma tarefa para o servidor.
-		if ( objTestePrimo.conexaoServidor(1, "127.0.0.1", 5000) ){
+		if ( !objTestePrimo.conexaoServidor(1, args[1], Integer.parseInt(args[2])) ){
 			System.out.println ( "Falha ao iniciar a conexao com o servidor para solicitar uma tarefa.\n" );
+			return;
 		}
 		
 		// Inicia a computação da tarefa.
-		if ( objTestePrimo.computaTarefa() ){
+		if ( !objTestePrimo.computaTarefa() ){
 			System.out.println ( "Falha para computar a tarefa.\n" );
 		}
 		
 		// Iniciando uma conexão para enviar os resultados para o servidor.
-		if ( objTestePrimo.conexaoServidor(2, "127.0.0.1", 5000) ){
+		if ( !objTestePrimo.conexaoServidor(2, args[1], Integer.parseInt(args[2])) ){
 			System.out.println ( "Falha ao iniciar a conexao com o servidor para enviar os resultados.\n" );
+			return;
 		}
 		
 		System.out.println ( "Finalizando o modulo cliente...\n" );
