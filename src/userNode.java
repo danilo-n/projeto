@@ -1,5 +1,12 @@
 import java.net.*; // PACOTE DE REDE
+import java.security.Certificate;
+
+import javax.net.ssl.SSLSession;
+import javax.net.ssl.SSLSocket;
+import javax.net.ssl.SSLSocketFactory;
+
 import java.io.*;  // PACOTE COM RECUROS DE ENTRADA E SAIDA
+import java.math.BigInteger;
 
 
 public class userNode {
@@ -39,7 +46,21 @@ public class userNode {
 // TODO: Aqui o acesso ao servidor deve ser passado por 
 //       por parâmetro. 
 			System.out.println( "Tentando conexao com o servidor ..." );
-			Socket socketServidor = new Socket( enderecoServidor, portServidor );
+			SSLSocketFactory ssf = (SSLSocketFactory) SSLSocketFactory.getDefault();
+			/* Adicionando encriptação a conexão */
+		    Socket socketServidor = ssf.createSocket(enderecoServidor, portServidor);
+
+		    SSLSession session = ((SSLSocket) socketServidor).getSession();
+		    // session.getPeerCertificates();
+		    // Verificação de certificado
+
+		    System.out.println("Peer host é " + session.getPeerHost());
+		    System.out.println("Cifra é " + session.getCipherSuite());
+		    System.out.println("Protocolo é " + session.getProtocol());
+		    System.out.println("ID é " + new BigInteger(session.getId()));
+		    System.out.println("Session criada no " + session.getCreationTime());
+		    System.out.println("Session acessada no " + session.getLastAccessedTime());
+
 			System.out.println( "Conectado ao servidor" );
 			
 			// Obtem um canal para recepção de dados com o servidor

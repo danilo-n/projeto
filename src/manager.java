@@ -2,6 +2,9 @@ import java.net.*; // PACOTE COM RECURSOS DE REDE
 import java.io.*;  // PACOTE COM RECUROS DE ENTRADA E SAIDA
 import java.util.concurrent.Semaphore;
 
+import javax.net.ssl.SSLServerSocket;
+import javax.net.ssl.SSLServerSocketFactory;
+
 
 public class manager extends Thread{
 
@@ -114,7 +117,10 @@ public class manager extends Thread{
 		System.err.println ( "Iniciando o servidor..." );
 		try {
 			// cria um servidor de sockets, referenciado por ss, na porta 5000
-		    ServerSocket SrvSckt = new ServerSocket( 5000 );
+			SSLServerSocketFactory sslserversocketfactory = (SSLServerSocketFactory) SSLServerSocketFactory.getDefault();
+	        // Máximo número de conexões em backlog é 50, este número pode ser alterado conforme a necessidade.
+
+		    SSLServerSocket SrvSckt = (SSLServerSocket) sslserversocketfactory.createServerSocket(5000);
 		    System.err.println ( "Servidor iniciado na porta 5000..." );
 		    
 		    // Loop esperando as conexões dos usuários
@@ -122,7 +128,7 @@ public class manager extends Thread{
 			    try {
 			    	System.err.println ( "Aguardando conexao..." );
 			    	Socket novaConexao = SrvSckt.accept();
-			    	
+
 			    	System.err.println ( "Iniciando nova thread..." );
 			    	Thread novoNode = new manager(novaConexao);
 			    	novoNode.start();
