@@ -26,7 +26,10 @@ public class manager extends Thread{
 		 return true;
 	}
 	
-	private boolean escreverArquivo(String codUser, long numero, boolean resultado) {
+	private synchronized boolean escreverArquivo(String codUser, long numero, boolean resultado) {
+		/* Utilizando synchronized no método você garante que mais nenhuma
+		outra instância está utilizando o mesmo método, mantendo o arquivo liberado para uso dentro desta função.
+		Removendo a necessidade de semáforos e sendo mais eficiente computacionalmente.*/
 	/*	
 		System.err.println ( "Tentando escrever no arquivo..." );
 		while (checkArquivo()) {
@@ -37,14 +40,10 @@ public class manager extends Thread{
 		setLockArquivo(true);
 		*/
 		try {
-			System.err.println ( "tentando obter mutex..." );
-			mutexResultado.acquire();
-			System.err.println ( "capturou mutex, escrevendo no arquivo..." );
-			
 			// Cria um arquivo em formato CSV para permitir abrir no Excel.
-			FileWriter Arquivo = new FileWriter("resultado.csv", true);
+			FileWriter Arquivo = new FileWriter("resultado.csv", true); // por que nao usar synchronized?
 			BufferedWriter escreve = new BufferedWriter(Arquivo);
-			
+
 			String linhaResultado;
 			linhaResultado = numero + "; " + 
 			                 (resultado ? "primo" : "não primo") + "; " +
@@ -58,14 +57,7 @@ public class manager extends Thread{
 		catch ( Exception e ) { 
 			System.out.println( e ); 
 			return false;
-		} 
-		finally {
-			mutexResultado.release();
-			System.err.println ( "devolvendo mutex..." );
 		}
-		
-		// Remove o Lock
-		//setLockArquivo(false);
 		
 		System.err.println ( "Finalizando a escrita do arquivo..." );
 		
