@@ -7,6 +7,10 @@ import javax.net.ssl.SSLServerSocketFactory;
 
 
 public class manager extends Thread{
+	/* Código demonstração */
+	public static final int HTTPS_PORT = 5000;
+	public static final String KEYSTORE_LOCATION = "C:/Keys/ServerKeyStore.jks";
+	public static final String KEYSTORE_PASSWORD = "Pass1word";
 
 	private Socket conexaoNode;
 	//indica qual o primeiro número para o teste de números primos
@@ -115,12 +119,14 @@ public class manager extends Thread{
 		// TODO Auto-generated method stub
 		// Iniciar o servidor.
 		System.err.println ( "Iniciando o servidor..." );
+		System.setProperty("javax.net.ssl.keyStore", KEYSTORE_LOCATION);
+		System.setProperty("javax.net.ssl.keyStorePassword", KEYSTORE_PASSWORD);
 		try {
 			// cria um servidor de sockets, referenciado por ss, na porta 5000
 			SSLServerSocketFactory sslserversocketfactory = (SSLServerSocketFactory) SSLServerSocketFactory.getDefault();
 	        // Máximo número de conexões em backlog é 50, este número pode ser alterado conforme a necessidade.
 
-		    SSLServerSocket SrvSckt = (SSLServerSocket) sslserversocketfactory.createServerSocket(5000);
+		    SSLServerSocket SrvSckt = (SSLServerSocket) sslserversocketfactory.createServerSocket(HTTPS_PORT);
 		    System.err.println ( "Servidor iniciado na porta 5000..." );
 		    
 		    // Loop esperando as conexões dos usuários

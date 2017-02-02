@@ -1,5 +1,4 @@
 import java.net.*; // PACOTE DE REDE
-import java.security.Certificate;
 
 import javax.net.ssl.SSLSession;
 import javax.net.ssl.SSLSocket;
