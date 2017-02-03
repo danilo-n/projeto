@@ -13,6 +13,7 @@ public class userNode {
 	private String codNode;
 	private long numeroParaVerificar;
 	private boolean resultadoTeste;
+	public static final String TRUSTTORE_LOCATION = "userNodeKey.jks";
 	
 	public userNode(String codNode) {
 		this.codNode = codNode;
@@ -45,6 +46,9 @@ public class userNode {
 // TODO: Aqui o acesso ao servidor deve ser passado por 
 //       por parâmetro. 
 			System.out.println( "Tentando conexao com o servidor ..." );
+
+			System.setProperty("javax.net.ssl.trustStore", TRUSTTORE_LOCATION);
+
 			SSLSocketFactory ssf = (SSLSocketFactory) SSLSocketFactory.getDefault();
 			/* Adicionando encriptação a conexão */
 		    Socket socketServidor = ssf.createSocket(enderecoServidor, portServidor);

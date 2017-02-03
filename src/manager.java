@@ -8,9 +8,9 @@ import javax.net.ssl.SSLServerSocketFactory;
 
 public class manager extends Thread{
 	/* Código demonstração */
-	public static final int HTTPS_PORT = 5000;
-	public static final String KEYSTORE_LOCATION = "C:/Keys/ServerKeyStore.jks";
-	public static final String KEYSTORE_PASSWORD = "Pass1word";
+	public static final int DATA_PORT = 5000;
+	public static final String KEYSTORE_LOCATION = "managerKey.jks";
+	public static final String KEYSTORE_PASSWORD = "TCC2017";
 
 	private Socket conexaoNode;
 	//indica qual o primeiro número para o teste de números primos
@@ -126,7 +126,7 @@ public class manager extends Thread{
 			SSLServerSocketFactory sslserversocketfactory = (SSLServerSocketFactory) SSLServerSocketFactory.getDefault();
 	        // Máximo número de conexões em backlog é 50, este número pode ser alterado conforme a necessidade.
 
-		    SSLServerSocket SrvSckt = (SSLServerSocket) sslserversocketfactory.createServerSocket(HTTPS_PORT);
+		    SSLServerSocket SrvSckt = (SSLServerSocket) sslserversocketfactory.createServerSocket(DATA_PORT);
 		    System.err.println ( "Servidor iniciado na porta 5000..." );
 		    
 		    // Loop esperando as conexões dos usuários
