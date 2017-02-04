@@ -1,51 +1,54 @@
-import java.net.*; // PACOTE COM RECURSOS DE REDE
-import java.io.*;  // PACOTE COM RECUROS DE ENTRADA E SAIDA
-import java.util.concurrent.Semaphore;
+/** Classe dedicada a implementação do gerente da rede grid.
+* Aqui estão implementados todos os itens necessário para o funcionamento
+* do gerente da rede grid.
+* Esta classe executa o controle das tarefas e armazena os resultados enviados pelos nós.
+*/
 
+// PACOTE COM RECURSOS DE REDE
+import java.net.*; 
+// PACOTE COM RECUROS DE ENTRADA E SAIDA
+import java.io.*;  
+
+// PACOTE COM OS RECURSOS DE CRIPTOGRAFIA DE DADOS
 import javax.net.ssl.SSLServerSocket;
 import javax.net.ssl.SSLServerSocketFactory;
 
 
 public class manager extends Thread{
-	/* Código demonstração */
 	public static final int DATA_PORT = 5000;
+	// Localização do certificado.
 	public static final String KEYSTORE_LOCATION = "managerKey.jks";
+	// Senha do certificado.
 	public static final String KEYSTORE_PASSWORD = "TCC2017";
 
+	// Socket para a conexão de cada thread com a nó.
 	private Socket conexaoNode;
 	//indica qual o primeiro número para o teste de números primos
 	private static long numeroEmTeste = 10; 
-	private static boolean arquivoOcupado = false;
 	
-	// iniciado em 1 por ser mutex
-	static Semaphore mutexResultado = new Semaphore(1);
-	
+	/** Construtor da classe "manager" 
+	* @param conexaoNode Socket - Armazena o socket para a thread que esta se comunicando com um nó.
+	*/
 	public manager( Socket conexaoNode ){
 		this.conexaoNode = conexaoNode;
 	}
 	
-	private boolean checkArquivo(){
-		return arquivoOcupado;
-	}
-	
-	private boolean setLockArquivo(boolean lock){
-		 arquivoOcupado = lock;
-		 return true;
-	}
-	
+	/** Método para escrever os resultados recebidos dos nós usuário em disco.
+	* Este método é implementado como synchronized para permitir o acesso de apenas 
+	* uma thread por vez.
+	* @param codUser String - Indica o código de identificação do usuário, 
+	*                         para indicar qual é o usuário que gerou o resultado.
+	* @param codUser long - Indica qual foi o número analisado pelo nó.
+ 	* @param resultado boolean - Indica se o número analisado é primo, 
+	*                            verdadeiro se o número é primo,
+	*							 falso se o número ´não é primo.
+	* @return boolean - Retorna o resultada operação, indicando se houve erros ou se a 
+	*                   operação foi concluída corretamente.
+	*/
 	private synchronized boolean escreverArquivo(String codUser, long numero, boolean resultado) {
 		/* Utilizando synchronized no método você garante que mais nenhuma
 		outra instância está utilizando o mesmo método, mantendo o arquivo liberado para uso dentro desta função.
 		Removendo a necessidade de semáforos e sendo mais eficiente computacionalmente.*/
-	/*	
-		System.err.println ( "Tentando escrever no arquivo..." );
-		while (checkArquivo()) {
-			// Melhorar este loop
-			// Usar semaforo
-		}
-		
-		setLockArquivo(true);
-		*/
 		try {
 			// Cria um arquivo em formato CSV para permitir abrir no Excel.
 			FileWriter Arquivo = new FileWriter("resultado.csv", true); // por que nao usar synchronized?
@@ -71,8 +74,13 @@ public class manager extends Thread{
 		return true;
 	}
 	
-	// Este método é utilizado para o login do usuário quando ele solicita uma nova tarefa e
-	// quando envia os resultados, para garantir que os resultados vem de Nós válidos e confiáveis.
+	/** Método para executar o login do usuário, verificando se o nó está cadastrado no sistema,
+    * é se o usuário está ativo e confiável para receber novas tarefas e enviar resultados.
+	* @param codUser String - Indica o código de identificação do usuário.
+	* @return boolean - Retorna o resultada operação, indicando se o usuário pode ser autenticado.
+    *                   verdadeiro, se o usuário pode acessar a rede grid.
+    *                   falso, se o usuário não estiver apto a acessar a rede grid.	
+	*/
 	private boolean loginUsuario ( String codUser ) {
 		try {
 			FileReader loginArq = new FileReader("login.csv");
@@ -83,8 +91,6 @@ public class manager extends Thread{
 				System.out.printf("%s\n", strLogin);
 				String arrLogin[] = new String[2];
 				arrLogin = strLogin.split(";");
-				System.out.println(" --> arrLogin[0]:" + arrLogin[0]);
-				System.out.println(" --> arrLogin[1]:" + arrLogin[1]);
 				
 				// Compara o codUser lido no arquivo com o codUser enviado pelo Nó. 
 				if (codUser.compareTo(arrLogin[0]) == 0) {
@@ -151,7 +157,8 @@ public class manager extends Thread{
 		} 
 	}
 
-	
+	/** Execução da thread de comunicação com o servidor.
+	*/
 	 public void run() {
 		 try {
 			System.err.println ( "Iniciando thread..." );

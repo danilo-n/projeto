@@ -1,10 +1,20 @@
-import java.net.*; // PACOTE DE REDE
+/** Classe dedicada a implementação do Nó de usuário.
+* Aqui estão implementados todos os itens necessário para o funcionamento
+* do nó de usuário.
+* Esta classe executa a computação da verificação se um número é primo, 
+* e executa todas as comunicações de rede com a sistema gerente da rede grid.
+*/
 
+// PACOTE DE REDE
+import java.net.*; 
+
+// PACOTES PARA CRIPTOGRAFIA DOS DADOS NA REDE
 import javax.net.ssl.SSLSession;
 import javax.net.ssl.SSLSocket;
 import javax.net.ssl.SSLSocketFactory;
 
-import java.io.*;  // PACOTE COM RECUROS DE ENTRADA E SAIDA
+// PACOTE COM RECUROS DE ENTRADA E SAIDA
+import java.io.*;  
 import java.math.BigInteger;
 
 
@@ -15,36 +25,60 @@ public class userNode {
 	private boolean resultadoTeste;
 	public static final String TRUSTTORE_LOCATION = "userNodeKey.jks";
 	
+	/** Construtor da classe "userNode"
+	*  @param  codNode String - Indica o código do usuário na rede grid.
+	*/
 	public userNode(String codNode) {
 		this.codNode = codNode;
 		this.numeroParaVerificar = 0;
 		this.resultadoTeste = false;
 	}
 	
+	/** Método para configurar qual o número a ser verificado se é primo ou não.
+	*  @param  numeroParaVerificar long - Número para verificar se é primo ou não.
+	*/
 	private void setNumero(long numeroParaVerificar) {
 		this.numeroParaVerificar = numeroParaVerificar;
 	}
 	
+	/** Método para configurar a resultado da verificação.
+	*  @param  resultadoTeste boolean - Resultado da computação do nó.
+	*                                   verdadeiro se o número é primo,
+	*							        falso se o número ´não é primo.
+	*/
 	private void setResultado(boolean resultadoTeste) {
 		this.resultadoTeste = resultadoTeste;
 	}
-	
+
+	/** Método para obter o código de usuário do nó, configurado na instanciação da classe.
+	* @return String - Código do usuário.
+	*/	
 	public String getCodNode(){
 		return codNode;
 	}
-	
+
+	/** Método para obter qual foi o número verificado pelo nó.
+	* @return long - Retorna o número verificado pelo nó.
+	*/
 	public long getNumero(){
 		return numeroParaVerificar;
 	}
 	
+	/** Método para obter o conteúdo do resultado da computação.
+	* @return boolean - Retorna o resultado da computação, indicando se o número é primo ou não.
+	*/	
 	public boolean getResultado(){
 		return resultadoTeste;
 	}
 	
+	/** Método para configurar a conexão com o servidor gerente da rede grid.
+	* @param tipoAcesso int - Indica o tipo de conexão que o nó pretende estabelecer com o gerente da rede grid.
+	*                         valor "1" - Indica que o nó quer receber uma nova tarefa.
+	*                         valor "2" - Indica que o nó quer enviar os resultados para o gerente da rede grid.
+	* @return boolean - indica se a conexão foi estabelecida corretamente, ou se ocorreram falhas.
+	*/
 	public boolean conexaoServidor( int tipoAcesso, String enderecoServidor, int portServidor) {
 		try {
-// TODO: Aqui o acesso ao servidor deve ser passado por 
-//       por parâmetro. 
 			System.out.println( "Tentando conexao com o servidor ..." );
 
 			System.setProperty("javax.net.ssl.trustStore", TRUSTTORE_LOCATION);
@@ -142,8 +176,10 @@ public class userNode {
 		return true;
 	}
 	
-	// Este método computa a tarefa solicitada pelo servidor, nesse caso este método verifica
-	// se o número repassado pelo servidor é primo ou não.
+	/** Este método computa a tarefa solicitada pelo servidor, nesse caso este método verifica
+	* se o número repassado pelo servidor é primo ou não.
+	* @return boolean - Retorna o resultado da computação, indicando se o número é primo ou não.
+	*/
 	public boolean computaTarefa(){
 		// Armazena a quantidade de divisores descobertos.
 		int quantDivisores = 0;
