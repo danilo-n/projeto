@@ -8,6 +8,8 @@
 import java.net.*; 
 // PACOTE COM RECUROS DE ENTRADA E SAIDA
 import java.io.*;  
+// PACOTE COM RECURSOS DE ARMAZENAMENTO
+import java.util.*;
 
 // PACOTE COM OS RECURSOS DE CRIPTOGRAFIA DE DADOS
 import javax.net.ssl.SSLServerSocket;
@@ -26,11 +28,92 @@ public class manager extends Thread{
 	//indica qual o primeiro número para o teste de números primos
 	private static long numeroEmTeste = 10; 
 	
+	private static Vector <controleTarefa> controladorTarefas;
+
 	/** Construtor da classe "manager" 
 	* @param conexaoNode Socket - Armazena o socket para a thread que esta se comunicando com um nó.
 	*/
 	public manager( Socket conexaoNode ){
 		this.conexaoNode = conexaoNode;
+		// inicializa o vetor que mantem o controle de tarefas.
+		this.controladorTarefas = new Vector <controleTarefa> ();
+	}
+
+	/** Método para remover tarefas da lista.
+	* @return boolean - Retorna se a tarefa foi removida da lista.
+	*/
+	private boolean removeTarefaControlador( long numero ) {
+		int auxBusca = 0;
+
+		for (auxBusca = 0; auxBusca < controladorTarefas.size(); auxBusca++) {
+			if (controladorTarefas.elementAt(auxBusca).getNumero() == numero) {
+				// remove a tarefa da lista.
+				// não para a execução do loop, pois como os nós podem atrasar
+				// vários nós podem estar processando o mesmo número.
+				controladorTarefas.removeElementAt(auxBusca);
+			}
+		}
+
+		return true;
+	}
+
+	/** Método para verificar se há tarefas atrasadas e que necessitam
+	*   ser processadas novamente.
+	* @return long - Retorna 0 se não há tarefas atrasadas,
+	*                e retorna o numero enviado para processamento que
+	*                em um nó atrasado.
+	*/
+	private long verificaTarefaAtrasadas() {
+		int auxBusca = 0;
+		for (auxBusca = 0; auxBusca < controladorTarefas.size(); auxBusca++) {
+			if ( controladorTarefas.elementAt(auxBusca).validaTempoProcessamento() ) {
+				// informa qual é o número que o nó está atrasando o resultado.
+				return controladorTarefas.elementAt(auxBusca).getNumero() ;
+			}
+		}
+
+		// Não há tarefas atrasadas.
+		return 0;
+	}
+
+	/** Método para inserir tarefas na lista.
+	* Este método verifica se há tarefas atrasadas e delega novas tarefas aos nós.
+	* @param codUser String - Indica o código de identificação do usuário,
+	*                         para indicar para qual usuário a tarefa foi delegada.
+	* @param codUser long - Indica qual foi o número delegado para o nó analisar.
+	* @return boolean - Retorna se a tarefa foi inserida na lista.
+	*/
+	private boolean insereTarefaControlador( String codUser, long numero) {
+		controladorTarefas.add(new controleTarefa(codUser, numero));
+		return true;
+	}
+
+	/** Método para gerar tarefas para os usuários.
+	* Este método verifica se há tarefas atrasadas e delega novas tarefas aos nós.
+	* @param codUser String - Indica o código de identificação do usuário,
+	*                         para indicar para qual usuário a tarefa foi delegada.
+	* @return long - Retorna qual o número foi enviado para o nó para o processamento
+	*                Este número será enviado pelo canal de comunicação.
+	*/
+	private synchronized long gerarTarefa( String codUser) {
+
+		System.out.println ( "Gerando numero para a nó " +  codUser);
+		long resulTarefa = 0;
+		resulTarefa = verificaTarefaAtrasadas();
+
+		if ( resulTarefa > 0) {
+			// Indica que há tarefas atrasadas e que necessitam de processamento.
+			insereTarefaControlador( codUser, resulTarefa);
+			System.out.println ( "Enviando uma tarefa atrasada para o nó " + codUser + " numero:" + resulTarefa);
+		} else if ( resulTarefa == 0) {
+			resulTarefa = numeroEmTeste;
+			insereTarefaControlador( codUser, numeroEmTeste);
+			numeroEmTeste++;
+			System.out.println ( "Enviando a tarefa numero:" + resulTarefa + " para o nó " + codUser );
+		}
+
+		// este número sera enviado para o nó processar.
+		return resulTarefa;
 	}
 	
 	/** Método para escrever os resultados recebidos dos nós usuário em disco.
@@ -45,7 +128,7 @@ public class manager extends Thread{
 	* @return boolean - Retorna o resultada operação, indicando se houve erros ou se a 
 	*                   operação foi concluída corretamente.
 	*/
-	private synchronized boolean escreverArquivo(String codUser, long numero, boolean resultado) {
+	private synchronized boolean escreverArquivo( String codUser, long numero, boolean resultado) {
 		/* Utilizando synchronized no método você garante que mais nenhuma
 		outra instância está utilizando o mesmo método, mantendo o arquivo liberado para uso dentro desta função.
 		Removendo a necessidade de semáforos e sendo mais eficiente computacionalmente.*/
@@ -62,6 +145,9 @@ public class manager extends Thread{
 	        escreve.newLine();
 	        escreve.flush();
 	        Arquivo.close();
+
+			// apos escrever no arquivo, podemos remover a tarefa da lista.
+			removeTarefaControlador( numero );
 		} 
 		// Catch para falha no arquivo.
 		catch ( Exception e ) { 
@@ -201,8 +287,7 @@ public class manager extends Thread{
 			// Entra no modo para enviar uma tarefa ao node.
 			if (tipoOperacaoNode == 1) {
 				System.out.println ( "Enviando o numero: " + numeroEmTeste + " para teste" );
-				canalTxDados.writeLong(numeroEmTeste);
-				numeroEmTeste++;
+				canalTxDados.writeLong( gerarTarefa( leuCodUser ) );
 				System.out.println ( "Proximo numero que vai ser testado: " + numeroEmTeste );
 				
 				// Verifica que o nodo entendeu a tarefa.
