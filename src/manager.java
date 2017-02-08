@@ -76,6 +76,30 @@ public class manager extends Thread{
 		return 0;
 	}
 
+	/** Método para verificar se o resultada recebido foi gerado através de uma tarefa
+	*   gerada pelo gerente. Isso evita que um nó malicioso execute um ataque no gerente
+	*   enviado um resultado inválido e/ou não solicitado.
+	* @param codUser String - Indica o código de identificação do usuário,
+	*                         para indicar qual é o usuário que gerou o resultado.
+	* @param numero long - Indica qual foi o número analisado pelo nó.
+	* @return boolean - Retorna se o resultado recebido é válido.
+	*/
+	private boolean verificaTarefaSolicitada( String codUser, long numero ) {
+		int auxBusca = 0;
+		for (auxBusca = 0; auxBusca < controladorTarefas.size(); auxBusca++) {
+			if (( controladorTarefas.elementAt(auxBusca).getNumero() == numero ) &&
+				( controladorTarefas.elementAt(auxBusca).getCodUser().equals(codUser))) {
+				// Informa que o resultado que foi recebido, foi gerado
+				// para uma tarefa solicitada pelo gerente.
+				return true;
+			}
+		}
+
+		// indica que a tarefa não foi solicitada pelo gerente, ou foi solicitada para outro nó.
+		// pode indicar que está ocorrendo uma tentativa de ataque.
+		return false;
+	}
+
 	/** Método para inserir tarefas na lista.
 	* Este método verifica se há tarefas atrasadas e delega novas tarefas aos nós.
 	* @param codUser String - Indica o código de identificação do usuário,
@@ -121,7 +145,7 @@ public class manager extends Thread{
 	* uma thread por vez.
 	* @param codUser String - Indica o código de identificação do usuário, 
 	*                         para indicar qual é o usuário que gerou o resultado.
-	* @param codUser long - Indica qual foi o número analisado pelo nó.
+	* @param numero long - Indica qual foi o número analisado pelo nó.
  	* @param resultado boolean - Indica se o número analisado é primo, 
 	*                            verdadeiro se o número é primo,
 	*							 falso se o número ´não é primo.
@@ -132,6 +156,13 @@ public class manager extends Thread{
 		/* Utilizando synchronized no método você garante que mais nenhuma
 		outra instância está utilizando o mesmo método, mantendo o arquivo liberado para uso dentro desta função.
 		Removendo a necessidade de semáforos e sendo mais eficiente computacionalmente.*/
+
+		if ( ! verificaTarefaSolicitada( codUser, numero)){
+			// Se a tarefa não foi solicitada, ou enviado por outro nó
+			// pode ser um ataque, e o resultado deve ser inválidado.
+			return false;
+		}
+
 		try {
 			// Cria um arquivo em formato CSV para permitir abrir no Excel.
 			FileWriter Arquivo = new FileWriter("resultado.csv", true); // por que nao usar synchronized?
