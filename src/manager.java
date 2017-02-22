@@ -17,7 +17,7 @@ import javax.net.ssl.SSLServerSocketFactory;
 
 
 public class manager extends Thread{
-	public static final int DATA_PORT = 5000;
+
 	// Localização do certificado.
 	public static final String KEYSTORE_LOCATION = "managerKey.jks";
 	// Senha do certificado.
@@ -28,15 +28,28 @@ public class manager extends Thread{
 	//indica qual o primeiro número para o teste de números primos
 	private static long numeroEmTeste = 10; 
 	
-	private static Vector <controleTarefa> controladorTarefas;
+	// Vetor para armazenar as tarefas já solicitadas e que estão esperando envio do resultado pelo nó.
+	private static Vector <controleTarefa> controladorTarefas = new Vector <controleTarefa> ();
 
 	/** Construtor da classe "manager" 
 	* @param conexaoNode Socket - Armazena o socket para a thread que esta se comunicando com um nó.
 	*/
 	public manager( Socket conexaoNode ){
 		this.conexaoNode = conexaoNode;
-		// inicializa o vetor que mantem o controle de tarefas.
-		this.controladorTarefas = new Vector <controleTarefa> ();
+	}
+
+	/** Método para listar tarefas da lista.
+	*/
+	private void listaTarefas() {
+		int auxBusca = 0;
+
+		System.out.println ( "A lista de tarefas contem: " +  controladorTarefas.size() + " tarefas.\n");
+		for (auxBusca = 0; auxBusca < controladorTarefas.size(); auxBusca++) {
+			System.out.println ( "idx[" + auxBusca + "] codUser: " +
+						controladorTarefas.elementAt(auxBusca).getCodUser() +
+						" numero: "+  controladorTarefas.elementAt(auxBusca).getNumero() + "\n");
+		}
+		System.out.println ( "\n");
 	}
 
 	/** Método para remover tarefas da lista.
@@ -86,6 +99,9 @@ public class manager extends Thread{
 	*/
 	private boolean verificaTarefaSolicitada( String codUser, long numero ) {
 		int auxBusca = 0;
+
+		listaTarefas();
+
 		for (auxBusca = 0; auxBusca < controladorTarefas.size(); auxBusca++) {
 			if (( controladorTarefas.elementAt(auxBusca).getNumero() == numero ) &&
 				( controladorTarefas.elementAt(auxBusca).getCodUser().equals(codUser))) {
@@ -160,6 +176,7 @@ public class manager extends Thread{
 		if ( ! verificaTarefaSolicitada( codUser, numero)){
 			// Se a tarefa não foi solicitada, ou enviado por outro nó
 			// pode ser um ataque, e o resultado deve ser inválidado.
+			System.err.println ( "A tarefa codUser:" + codUser + " numero:" + numero + " não foi solicitada..." );
 			return false;
 		}
 
@@ -239,6 +256,15 @@ public class manager extends Thread{
 	}
 	
 	public static void main(String[] args) {
+
+		// Verificando a lista de argumentos
+		// Exemplo de execução manager <Port Manager>
+		if (args.length != 1) {
+			System.out.println ( "Exemplo de execucao: gerenteExe <porta>" );
+			System.out.println ( "Args" + args.length );
+			return;
+		}
+
 		// TODO Auto-generated method stub
 		// Iniciar o servidor.
 		System.err.println ( "Iniciando o servidor..." );
@@ -249,8 +275,8 @@ public class manager extends Thread{
 			SSLServerSocketFactory sslserversocketfactory = (SSLServerSocketFactory) SSLServerSocketFactory.getDefault();
 	        // Máximo número de conexões em backlog é 50, este número pode ser alterado conforme a necessidade.
 
-		    SSLServerSocket SrvSckt = (SSLServerSocket) sslserversocketfactory.createServerSocket(DATA_PORT);
-		    System.err.println ( "Servidor iniciado na porta 5000..." );
+		    SSLServerSocket SrvSckt = (SSLServerSocket) sslserversocketfactory.createServerSocket(Integer.parseInt(args[0]));
+		    System.err.println ( "Servidor iniciado na porta " + Integer.parseInt(args[0]) );
 		    
 		    // Loop esperando as conexões dos usuários
 		    while (true) {
@@ -279,7 +305,7 @@ public class manager extends Thread{
 	 public void run() {
 		 try {
 			System.err.println ( "Iniciando thread..." );
-			
+
 			// Obtem um canal para recepção de dados com o servidor
 			InputStream rx = this.conexaoNode.getInputStream( );
 			DataInputStream canalRxDados = new DataInputStream ( rx );
@@ -353,8 +379,9 @@ public class manager extends Thread{
 			}
 			
 			System.out.println ( "Fechando o socket...");
+			System.out.println ( "\n\n\n");
 			this.conexaoNode.close();
-			 
+
 		 } catch ( Exception e ) { 
 			System.err.println( e ); 
 			System.err.println ( "A Thread falhou ao criar o server socket para os nodos ..." );

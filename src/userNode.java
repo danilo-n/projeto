@@ -189,7 +189,7 @@ public class userNode {
 				quantDivisores++;
 			}
 		}
-		
+
 		if (quantDivisores == 2){
 			// O número em teste é primo
 			setResultado(true);
@@ -203,14 +203,14 @@ public class userNode {
 		return true;
 	}
 	
-	public static void main(String[] args) {
+	public static void main(String[] args) throws InterruptedException {
 		// TODO Auto-generated method stub
 		System.out.println ( "Iniciando o modulo cliente...\n" );
 		
 		// Verificando a lista de argumentos
 		// Exemplo de execução userNode <codUser> <IP Manager> <Port Manager>
-		if (args.length != 3) {
-			System.out.println ( "Exemplo de execucao: userNode <codUser> <IP Manager> <Port Manager>" );
+		if ( (args.length < 3) || (args.length > 4) ) {
+			System.out.println ( "Exemplo de execucao: noUsuarioExe <codUser> <IP Manager> <Port Manager> <pausa>(opcional)" );
 			System.out.println ( "Args" + args.length );
 			return;
 		}
@@ -229,6 +229,17 @@ public class userNode {
 			System.out.println ( "Falha para computar a tarefa.\n" );
 		}
 		
+		// Insere um atraso para simular a diferença de tempo
+		// entre o processamento em cada nó.
+		// Assim as respostas são recebidas em momentos diferentes.
+		if (args.length == 3) {
+			int tempoAtraso = (int) Math.round( Math.random() * (20));
+			System.out.println ( "Iniciando uma espera de " + tempoAtraso + " segundos ...\n" );
+			Thread.sleep( (tempoAtraso *1000) );
+		} else {
+			Thread.sleep( (Integer.parseInt(args[3]) *1000) );
+		}
+
 		// Iniciando uma conexão para enviar os resultados para o servidor.
 		if ( !objTestePrimo.conexaoServidor(2, args[1], Integer.parseInt(args[2])) ){
 			System.out.println ( "Falha ao iniciar a conexao com o servidor para enviar os resultados.\n" );
